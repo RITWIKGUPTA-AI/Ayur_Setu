@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23163832'><path d='M12 2C9 6 6 9 6 13a6 6 0 0 0 12 0c0-4-3-7-6-11z'/></svg>" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#163832" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AyurSetu | AYUSH Student-Industry Skill Bridge (SIH 2026, PS 26044)</title>
+    <meta name="description" content="AyurSetu: An Academia-Industry Skill Bridge for AYUSH graduates — closing the gap between Ayurveda, Yoga, Unani, Siddha & Homeopathy curricula and modern GMP, Pharmacovigilance, and Clinical Research industry requirements. Built for Smart India Hackathon 2026, Problem Statement 26044 (Ministry of AYUSH / AIIA)." />
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body class="bg-[#f8faf9] text-slate-800 font-sans antialiased selection:bg-blue-800 selection:text-white">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
+  </body>
+</html>
