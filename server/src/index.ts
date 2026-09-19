@@ -1,3 +1,10 @@
+// NOTE: This is NOT the entry point used by `npm run build`/`npm start` or the
+// Dockerfile — that's `server.ts` (backed by the local JSON store in
+// `db/database.ts`), which is what the deployed frontend actually talks to.
+// This file is a separate, in-progress Supabase + Anthropic-backed API and
+// requires SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY / SUPABASE_JWT_SECRET /
+// ANTHROPIC_API_KEY env vars to boot. Only run it directly (`tsx src/index.ts`
+// or `node dist/index.js`) once those are configured.
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";

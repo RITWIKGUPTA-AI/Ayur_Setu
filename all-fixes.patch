@@ -1,0 +1,162 @@
+diff --git a/Dockerfile b/Dockerfile
+index 5f78f17..ae496cb 100644
+--- a/Dockerfile
++++ b/Dockerfile
+@@ -27,6 +27,7 @@ ENV PORT=5001
+ # Copy built server artifacts and dependencies
+ COPY --from=builder /app/server/dist ./server/dist
+ COPY --from=builder /app/server/node_modules ./server/node_modules
++COPY --from=builder /app/server/package*.json ./server/
+ COPY --from=builder /app/dist ./dist
+ COPY --from=builder /app/package*.json ./
+ 
+diff --git a/server/package.json b/server/package.json
+index 3230bca..31f6b66 100644
+--- a/server/package.json
++++ b/server/package.json
+@@ -1,12 +1,13 @@
+ {
+   "name": "ayursetu-backend",
+   "version": "1.0.0",
+-  "description": "AyurSetu full backend - Supabase + AI-powered quizzes, chatbot, matching, analytics",
+-  "main": "dist/index.js",
++  "description": "AyurSetu backend API + static host for the built frontend (see src/server.ts)",
++  "type": "commonjs",
++  "main": "dist/server.js",
+   "scripts": {
+-    "dev": "tsx watch src/index.ts",
++    "dev": "tsx watch src/server.ts",
+     "build": "tsc -p tsconfig.json",
+-    "start": "node dist/index.js",
++    "start": "node dist/server.js",
+     "seed": "tsx src/scripts/seed.ts"
+   },
+   "dependencies": {
+diff --git a/server/src/db/database.ts b/server/src/db/database.ts
+index d876a31..9c70e56 100644
+--- a/server/src/db/database.ts
++++ b/server/src/db/database.ts
+@@ -1,6 +1,5 @@
+ import fs from 'fs';
+ import path from 'path';
+-import { fileURLToPath } from 'url';
+ import {
+   StudentProfile,
+   JobOpportunity,
+@@ -28,8 +27,8 @@ import {
+ } from './initialData.js';
+ import { computeMatch } from '../utils/matching.js';
+ 
+-const __filename = fileURLToPath(import.meta.url);
+-const __dirname = path.dirname(__filename);
++// This file compiles to CommonJS (see server/tsconfig.json), so the native
++// __dirname global is used directly instead of an ESM import.meta polyfill.
+ const DATA_DIR = path.resolve(__dirname, '../../data');
+ const DB_FILE = path.resolve(DATA_DIR, 'store.json');
+ 
+diff --git a/server/src/index.ts b/server/src/index.ts
+index 82519c1..811cece 100644
+--- a/server/src/index.ts
++++ b/server/src/index.ts
+@@ -1,3 +1,10 @@
++// NOTE: This is NOT the entry point used by `npm run build`/`npm start` or the
++// Dockerfile — that's `server.ts` (backed by the local JSON store in
++// `db/database.ts`), which is what the deployed frontend actually talks to.
++// This file is a separate, in-progress Supabase + Anthropic-backed API and
++// requires SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY / SUPABASE_JWT_SECRET /
++// ANTHROPIC_API_KEY env vars to boot. Only run it directly (`tsx src/index.ts`
++// or `node dist/index.js`) once those are configured.
+ import express from "express";
+ import cors from "cors";
+ import helmet from "helmet";
+diff --git a/server/src/server.ts b/server/src/server.ts
+index ed37516..e4decf8 100644
+--- a/server/src/server.ts
++++ b/server/src/server.ts
+@@ -2,14 +2,16 @@ import express from 'express';
+ import cors from 'cors';
+ import path from 'path';
+ import fs from 'fs';
+-import { fileURLToPath } from 'url';
+ import dotenv from 'dotenv';
+ import apiRouter from './routes/index.js';
+ 
+ dotenv.config();
+ 
+-const __filename = fileURLToPath(import.meta.url);
+-const __dirname = path.dirname(__filename);
++// NOTE: this file is compiled to CommonJS (see server/tsconfig.json), where
++// __filename/__dirname are provided natively by Node — no ESM import.meta
++// polyfill needed. (Using `import.meta.url` here previously caused the
++// compiled output to contain invalid syntax for a CommonJS module, which
++// crashed the server immediately on deploy.)
+ 
+ const app = express();
+ const PORT = process.env.PORT || 5001;
+diff --git a/src/App.tsx b/src/App.tsx
+index a831e8b..4c21468 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -1,20 +1,27 @@
+-import React from 'react';
++import React, { Suspense, lazy } from 'react';
+ import { useApp } from './context/AppContext';
+ import { Navbar } from './components/common/Navbar';
+ import { Footer } from './components/common/Footer';
+ import { ToastContainer } from './components/common/Toast';
+ import { HeroSection } from './components/landing/HeroSection';
+-import { AssessmentWizard } from './components/assessment/AssessmentWizard';
+-import { StudentDashboard } from './components/student/StudentDashboard';
+-import { AcademicianDashboard } from './components/academician/AcademicianDashboard';
+-import { IndustryDashboard } from './components/industry/IndustryDashboard';
+-import { InstitutionDashboard } from './components/institution/InstitutionDashboard';
+-import { JobBoardPage } from './components/jobs/JobBoardPage';
+-import { LearningMarketplacePage } from './components/learning/LearningMarketplacePage';
+-import { PublicPortfolioPage } from './components/portfolio/PublicPortfolioPage';
+-import { AnalyticsPage } from './components/analytics/AnalyticsPage';
+-import { AuthPage } from './components/auth/AuthPage';
+-import { JobDetailModal } from './components/jobs/JobDetailModal';
++import { PageLoader } from './components/common/PageLoader';
++
++// Everything below is loaded on demand (React.lazy) rather than bundled into the
++// initial page load. The landing page (HeroSection, imported eagerly above) is what
++// most visitors — and hackathon judges — see first, so keeping it in the main bundle
++// avoids a loading flash there, while every dashboard/tool route below is split into
++// its own small chunk and fetched only when that role/page is actually opened.
++const AssessmentWizard = lazy(() => import('./components/assessment/AssessmentWizard').then(m => ({ default: m.AssessmentWizard })));
++const StudentDashboard = lazy(() => import('./components/student/StudentDashboard').then(m => ({ default: m.StudentDashboard })));
++const AcademicianDashboard = lazy(() => import('./components/academician/AcademicianDashboard').then(m => ({ default: m.AcademicianDashboard })));
++const IndustryDashboard = lazy(() => import('./components/industry/IndustryDashboard').then(m => ({ default: m.IndustryDashboard })));
++const InstitutionDashboard = lazy(() => import('./components/institution/InstitutionDashboard').then(m => ({ default: m.InstitutionDashboard })));
++const JobBoardPage = lazy(() => import('./components/jobs/JobBoardPage').then(m => ({ default: m.JobBoardPage })));
++const LearningMarketplacePage = lazy(() => import('./components/learning/LearningMarketplacePage').then(m => ({ default: m.LearningMarketplacePage })));
++const PublicPortfolioPage = lazy(() => import('./components/portfolio/PublicPortfolioPage').then(m => ({ default: m.PublicPortfolioPage })));
++const AnalyticsPage = lazy(() => import('./components/analytics/AnalyticsPage').then(m => ({ default: m.AnalyticsPage })));
++const AuthPage = lazy(() => import('./components/auth/AuthPage').then(m => ({ default: m.AuthPage })));
++const JobDetailModal = lazy(() => import('./components/jobs/JobDetailModal').then(m => ({ default: m.JobDetailModal })));
+ 
+ export const MainApp: React.FC = () => {
+   const { page, role } = useApp();
+@@ -62,11 +69,15 @@ export const MainApp: React.FC = () => {
+ 
+       {/* Main Content View */}
+       <main className="flex-1">
+-        {renderCurrentPage()}
++        <Suspense fallback={<PageLoader />}>
++          {renderCurrentPage()}
++        </Suspense>
+       </main>
+ 
+       {/* Global Modals & Notifications */}
+-      <JobDetailModal />
++      <Suspense fallback={null}>
++        <JobDetailModal />
++      </Suspense>
+       <ToastContainer />
+ 
+       {/* Footer */}
+@@ -76,3 +87,4 @@ export const MainApp: React.FC = () => {
+ };
+ 
+ export default MainApp;
++

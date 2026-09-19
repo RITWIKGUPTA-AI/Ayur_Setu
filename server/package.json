@@ -1,12 +1,13 @@
 {
   "name": "ayursetu-backend",
   "version": "1.0.0",
-  "description": "AyurSetu full backend - Supabase + AI-powered quizzes, chatbot, matching, analytics",
-  "main": "dist/index.js",
+  "description": "AyurSetu backend API + static host for the built frontend (see src/server.ts)",
+  "type": "commonjs",
+  "main": "dist/server.js",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/index.js",
+    "start": "node dist/server.js",
     "seed": "tsx src/scripts/seed.ts"
   },
   "dependencies": {

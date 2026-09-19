@@ -27,6 +27,7 @@ ENV PORT=5001
 # Copy built server artifacts and dependencies
 COPY --from=builder /app/server/dist ./server/dist
 COPY --from=builder /app/server/node_modules ./server/node_modules
+COPY --from=builder /app/server/package*.json ./server/
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package*.json ./
 

@@ -2,14 +2,16 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
-import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import apiRouter from './routes/index.js';
 
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// NOTE: this file is compiled to CommonJS (see server/tsconfig.json), where
+// __filename/__dirname are provided natively by Node — no ESM import.meta
+// polyfill needed. (Using `import.meta.url` here previously caused the
+// compiled output to contain invalid syntax for a CommonJS module, which
+// crashed the server immediately on deploy.)
 
 const app = express();
 const PORT = process.env.PORT || 5001;

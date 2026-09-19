@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import {
   StudentProfile,
   JobOpportunity,
@@ -28,8 +27,8 @@ import {
 } from './initialData.js';
 import { computeMatch } from '../utils/matching.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// This file compiles to CommonJS (see server/tsconfig.json), so the native
+// __dirname global is used directly instead of an ESM import.meta polyfill.
 const DATA_DIR = path.resolve(__dirname, '../../data');
 const DB_FILE = path.resolve(DATA_DIR, 'store.json');
 
